@@ -1,0 +1,47 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Scale and center the content to fit within the 66dp safe zone -->
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.65"
+        android:scaleY="0.65">
+
+        <!-- Stylized Modern Heart -->
+        <path
+            android:pathData="M54,92 C32,76 18,60 18,42 C18,26 30,16 46,16 C51,16 54,21 54,21 C54,21 57,16 62,16 C78,16 90,26 90,42 C90,60 76,76 54,92 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:startX="18"
+                    android:startY="16"
+                    android:endX="90"
+                    android:endY="92"
+                    android:type="linear">
+                    <item android:offset="0" android:color="#FF4F46E5" />
+                    <item android:offset="1" android:color="#FF7C3AED" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- Clean AI Pulse Line -->
+        <path
+            android:pathData="M28,50 L40,50 L46,32 L56,68 L62,50 L80,50"
+            android:strokeWidth="5"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+
+        <!-- Subtle AI Tech Accents (Dots) -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M46,32m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M56,68m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+    </group>
+</vector>
