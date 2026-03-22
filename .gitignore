@@ -26,4 +26,4 @@ output-metadata.json
 google-services.json
 
 # Android Profiling
-*.hprof
+*.hprof.idea/
