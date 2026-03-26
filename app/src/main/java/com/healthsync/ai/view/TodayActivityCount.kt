@@ -91,10 +91,8 @@ fun TodayActivityCount(
         isRefreshing = isRefreshing,
         onRefresh = {
             scope.launch {
-                isRefreshing = true
                 viewModel.triggerSync()
                 viewModel.getTodayData()
-                isRefreshing = false
                 Toast.makeText(context, "Synced ✓", Toast.LENGTH_SHORT).show()
             }
         }
@@ -105,7 +103,7 @@ fun TodayActivityCount(
                 .background(Color(0xFF080810)),
             contentPadding = PaddingValues(
                 start = 20.dp, end = 20.dp,
-                top = 16.dp, bottom = 40.dp
+                top = 48.dp, bottom = 40.dp
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
