@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import com.healthsync.ai.model.HealthEvent
 import com.healthsync.ai.model.HealthEventDao
 
-@Database(entities = [HealthEvent::class], version = 1)
+@Database(entities = [HealthEvent::class], version = 1, exportSchema = false)
 abstract class AppDatabase : RoomDatabase(){
 
     abstract fun healthEventDao() : HealthEventDao

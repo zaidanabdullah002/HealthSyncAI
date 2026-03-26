@@ -9,6 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.healthsync.ai.ui.theme.HealthSyncAITheme
 import com.healthsync.ai.view.TodayActivityCount
+
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -21,7 +22,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    TodayActivityCount()
+                    TodayActivityCount(applicationContext)
                 }
             }
         }

@@ -2,7 +2,7 @@ package com.healthsync.ai.di
 
 import android.content.Context
 import com.healthsync.ai.data.AppDatabase
-import com.healthsync.ai.data.repository.HealthRepository
+import com.healthsync.ai.repository.HealthRepository
 import com.healthsync.ai.model.HealthEventDao
 import com.healthsync.ai.service.HealthApiService
 import dagger.Module
