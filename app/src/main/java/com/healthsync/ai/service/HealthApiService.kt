@@ -10,8 +10,26 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface HealthApiService {
+
+    @POST("/sync")
+    suspend fun syncEvents(
+        @Body request: SyncRequest
+    ): Response<SyncResponse>
+
+    @GET("/health/{deviceId}/summary")
+    suspend fun getSummary(
+        @Path("deviceId") deviceId: String
+    ): HealthSummary
+
+    @GET("/health/summary")
+    suspend fun getGlobalSummary(
+        @Query("start") start: Long,
+        @Query("end") end: Long
+    ): HealthSummary
+
     companion object {
         private const val BASE_URL = "http://10.0.2.2:8000/"
 
@@ -29,14 +47,4 @@ interface HealthApiService {
             }
         }
     }
-
-    @POST("/sync")
-    suspend fun syncEvents(
-        @Body request: SyncRequest
-    ): Response<SyncResponse>
-
-    @GET("/health/{deviceId}/summary")
-    suspend fun getSummary(
-        @Path("deviceId") deviceId: String
-    ): HealthSummary
 }
