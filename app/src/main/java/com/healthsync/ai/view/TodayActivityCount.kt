@@ -12,6 +12,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,12 +94,29 @@ fun TodayActivityCount(
         isRefreshing = isRefreshing,
         onRefresh = {
             scope.launch {
-                viewModel.triggerSync()
-                viewModel.getTodayData()
+                isRefreshing = true
+                try {
+                    viewModel.triggerSync()
+                    viewModel.getTodayData()
+                } finally {
+                    isRefreshing = false
+                }
                 Toast.makeText(context, "Synced ✓", Toast.LENGTH_SHORT).show()
             }
-        }
+        },
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                state = rememberPullToRefreshState(),
+                modifier = Modifier.align(Alignment.TopCenter),
+                containerColor = Color(0xFF1E1B4B),
+                color = Color(0xFF818CF8),
+                isRefreshing = isRefreshing,
+                threshold = PullToRefreshDefaults.PositionalThreshold
+            )
+        },
+        modifier = Modifier.fillMaxSize()
     ) {
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
