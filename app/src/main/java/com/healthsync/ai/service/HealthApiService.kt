@@ -35,7 +35,7 @@ interface HealthApiService {
     @POST("/agent/chat")
     suspend fun agentChat(
         @Body request: AgentChatRequest
-    ): AgentChatResponse
+    ): Response<AgentChatResponse>
 
     companion object {
         private const val BASE_URL = "http://10.0.2.2:8000/"
