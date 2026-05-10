@@ -6,6 +6,7 @@ import com.healthsync.ai.model.AgentChatResponse
 import com.healthsync.ai.model.HealthEventDao
 import com.healthsync.ai.model.HealthSummary
 import com.healthsync.ai.model.SyncRequest
+import retrofit2.HttpException
 import com.healthsync.ai.service.HealthApiService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -73,6 +74,10 @@ class HealthRepository @Inject constructor(
     }
 
     suspend fun sendAgentChat(request: AgentChatRequest): AgentChatResponse {
-        return api.agentChat(request)
+        val response = api.agentChat(request)
+        if (!response.isSuccessful) {
+            throw HttpException(response)
+        }
+        return response.body() ?: throw Exception("Empty agent chat response")
     }
 }

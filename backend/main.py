@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import re
 import chromadb
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -12,6 +13,7 @@ from openai import RateLimitError
 from database import (
     DATABASE_URL,
     get_global_summary,
+    get_goal,
     get_summary_for_device,
     get_todays_steps,
     get_weekly_summary,
@@ -35,6 +37,66 @@ from openai import OpenAI
 openai_api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=openai_api_key) if openai_api_key else None
 DEFAULT_STEP_GOAL = 10000
+
+
+def _normalized_message(message: str) -> str:
+    return message.strip().lower()
+
+
+def _looks_like_weekly_question(message: str) -> bool:
+    text = _normalized_message(message)
+    return "week" in text or "weekly" in text or "7 day" in text or "7-day" in text
+
+
+def _looks_like_goal_question(message: str) -> bool:
+    text = _normalized_message(message)
+    return "goal" in text or "set a goal" in text or "set goal" in text or "deadline" in text
+
+
+def _looks_like_anomaly_question(message: str) -> bool:
+    text = _normalized_message(message)
+    return "anomaly" in text or "abnormal" in text or "off track" in text
+
+
+def _looks_like_plan_question(message: str) -> bool:
+    text = _normalized_message(message)
+    return "daily plan" in text or "make me a plan" in text or "plan for today" in text or "what should i do today" in text
+
+
+def _looks_like_today_question(message: str) -> bool:
+    text = _normalized_message(message)
+    return "today" in text or "on track" in text or "steps" in text
+
+
+def _parse_goal_request(message: str) -> tuple[float | None, str | None]:
+    text = _normalized_message(message)
+
+    target_steps: float | None = None
+    target_match = re.search(r"(\d[\d,]*\s*[kK]?)\s*(?:steps?|step goal|goal|target)?", text)
+    if target_match:
+        raw_target = target_match.group(1).replace(",", "").strip().lower()
+        try:
+            if raw_target.endswith("k"):
+                target_steps = float(raw_target[:-1]) * 1000.0
+            else:
+                target_steps = float(raw_target)
+        except ValueError:
+            target_steps = None
+
+    deadline: str | None = None
+    deadline_match = re.search(r"\b(?:by|for)\s+([a-z0-9][a-z0-9 ,/-]*)", text)
+    if deadline_match:
+        deadline = deadline_match.group(1).strip()
+
+    if deadline is None:
+        if "tomorrow" in text:
+            deadline = "tomorrow"
+        elif "today" in text:
+            deadline = "today"
+        elif "this week" in text:
+            deadline = "this week"
+
+    return target_steps, deadline
 
 
 @asynccontextmanager
@@ -112,21 +174,95 @@ def _write_memory(memory_id, message, steps_today):
 
 
 async def _fallback_agent_chat(conn: asyncpg.Connection, request: AgentChatRequest) -> AgentChatResponse:
-    steps_today = await get_todays_steps(
-        conn,
-        device_id=request.deviceId,
-        timezone_offset_minutes=request.timezoneOffsetMinutes,
-    )
-    if steps_today >= DEFAULT_STEP_GOAL:
-        assistant_text = f"Yes. You are on track today with {int(steps_today)} steps."
-    else:
-        remaining = DEFAULT_STEP_GOAL - int(steps_today)
-        assistant_text = (
-            f"You have {int(steps_today)} steps today. "
-            f"You are {remaining} steps away from the {DEFAULT_STEP_GOAL} step goal."
-        )
-
     memory_id = _memory_id(request)
+    message = request.message.strip()
+    normalized = _normalized_message(message)
+    steps_today = None
+
+    if _looks_like_plan_question(message):
+        plan = await generate_daily_plan(
+            conn,
+            user_id=request.userId,
+            device_id=request.deviceId,
+            timezone_offset_minutes=request.timezoneOffsetMinutes,
+        )
+        steps_today = plan["todaySteps"]
+        plan_lines = "\n".join(f"- {item}" for item in plan["plan"])
+        goal_text = ""
+        if plan["goal"]:
+            goal_text = f" Your saved goal is {int(plan['targetSteps'])} steps by {plan['goal']['deadline']}."
+        assistant_text = (
+            f"Here’s your daily plan.\n"
+            f"You’ve done {int(plan['todaySteps'])} steps today and have {int(plan['remainingSteps'])} steps left to reach {int(plan['targetSteps'])}.\n"
+            f"{goal_text}\n"
+            f"{plan_lines}"
+        )
+    elif _looks_like_goal_question(message):
+        if "set" in normalized and ("goal" in normalized or "target" in normalized):
+            target_steps, deadline = _parse_goal_request(message)
+            if target_steps is None:
+                target_steps = float(DEFAULT_STEP_GOAL)
+            if deadline is None:
+                deadline = "today"
+            goal = await set_goal(
+                conn,
+                user_id=request.userId,
+                target_steps=target_steps,
+                deadline=deadline,
+                device_id=request.deviceId,
+            )
+            assistant_text = (
+                f"Saved your goal for {int(goal['targetSteps'])} steps by {goal['deadline']}."
+            )
+        else:
+            goal = await get_goal(conn, user_id=request.userId, device_id=request.deviceId)
+            if goal:
+                assistant_text = (
+                    f"Your current goal is {int(goal['targetSteps'])} steps by {goal['deadline']}."
+                )
+            else:
+                assistant_text = "You don’t have a saved goal yet. You can ask me to set one."
+    elif _looks_like_anomaly_question(message):
+        anomaly = await detect_anomaly(
+            conn,
+            device_id=request.deviceId,
+            timezone_offset_minutes=request.timezoneOffsetMinutes,
+        )
+        steps_today = anomaly["todaySteps"]
+        assistant_text = anomaly["message"]
+        if anomaly["anomalyDetected"]:
+            assistant_text += f" Today: {int(anomaly['todaySteps'])} steps vs recent average {int(anomaly['averageDailySteps'])}."
+    elif _looks_like_weekly_question(message):
+        weekly = await get_weekly_summary(
+            conn,
+            device_id=request.deviceId,
+            timezone_offset_minutes=request.timezoneOffsetMinutes,
+        )
+        steps_today = await get_todays_steps(
+            conn,
+            device_id=request.deviceId,
+            timezone_offset_minutes=request.timezoneOffsetMinutes,
+        )
+        assistant_text = (
+            f"This week you’ve done {int(weekly['steps'])} steps total, "
+            f"{int(weekly['activeTime'])} minutes of active time, and {int(weekly['calories'])} calories.\n"
+            f"Today you’re at {int(steps_today)} steps."
+        )
+    else:
+        steps_today = await get_todays_steps(
+            conn,
+            device_id=request.deviceId,
+            timezone_offset_minutes=request.timezoneOffsetMinutes,
+        )
+        if steps_today >= DEFAULT_STEP_GOAL:
+            assistant_text = f"Yes. You are on track today with {int(steps_today)} steps."
+        else:
+            remaining = DEFAULT_STEP_GOAL - int(steps_today)
+            assistant_text = (
+                f"You have {int(steps_today)} steps today. "
+                f"You are {remaining} steps away from the {DEFAULT_STEP_GOAL} step goal."
+            )
+
     _write_memory(memory_id, request.message, steps_today)
     return AgentChatResponse(
         assistantResponse=assistant_text,
@@ -283,11 +419,20 @@ async def _run_agent_chat(conn: asyncpg.Connection, request: AgentChatRequest) -
                 )
             if call.name == "set_goal":
                 args = json.loads(call.arguments or "{}")
+                target_steps = args.get("targetSteps")
+                deadline = str(args.get("deadline", "")).strip()
+                if target_steps is None:
+                    parsed_target, parsed_deadline = _parse_goal_request(request.message)
+                    target_steps = parsed_target if parsed_target is not None else float(10000)
+                    if not deadline and parsed_deadline:
+                        deadline = parsed_deadline
+                if not deadline:
+                    deadline = "today"
                 goal = await set_goal(
                     conn,
                     user_id=request.userId,
-                    target_steps=float(args.get("targetSteps", 10000)),
-                    deadline=str(args.get("deadline", "")),
+                    target_steps=float(target_steps),
+                    deadline=deadline,
                     device_id=args.get("deviceId") or request.deviceId,
                 )
                 tool_outputs.append(

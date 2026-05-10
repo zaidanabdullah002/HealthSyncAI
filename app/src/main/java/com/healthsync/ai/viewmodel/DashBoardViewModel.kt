@@ -14,6 +14,7 @@ import com.healthsync.ai.model.HealthSummary
 import com.healthsync.ai.model.toDashboardUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import retrofit2.HttpException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -133,9 +134,13 @@ class DashBoardViewModel @Inject constructor(
                     )
                 )
             } catch (e: Exception) {
-                Log.e("HealthSync", "Agent chat failed: ${e.message}")
+                val serverMessage = when (e) {
+                    is HttpException -> "Server error ${e.code()}: ${e.response()?.errorBody()?.string()?.takeIf { it.isNotBlank() } ?: e.message()}"
+                    else -> e.message ?: "Unknown error"
+                }
+                Log.e("HealthSync", "Agent chat failed: $serverMessage")
                 _chatResponse.value = AgentChatResponse(
-                    assistantResponse = "Sorry, I couldn't answer right now.",
+                    assistantResponse = "I couldn’t reach the chat server right now. $serverMessage",
                     stepsToday = null,
                     memoryId = null
                 )
