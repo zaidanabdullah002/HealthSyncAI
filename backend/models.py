@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 class HealthEvent(BaseModel):
@@ -19,3 +21,17 @@ class HealthSummary(BaseModel):
     steps: float
     activeTime: float
     calories: float
+
+
+class AgentChatRequest(BaseModel):
+    message: str
+    userId: str
+    deviceId: Optional[str] = None
+    timezoneOffsetMinutes: int = 0
+    chatId: Optional[str] = None
+
+
+class AgentChatResponse(BaseModel):
+    assistantResponse: str
+    stepsToday: Optional[float] = None
+    memoryId: Optional[str] = None

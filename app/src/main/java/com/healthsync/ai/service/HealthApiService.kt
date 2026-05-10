@@ -1,6 +1,8 @@
 package com.healthsync.ai.service
 
 import com.healthsync.ai.model.HealthSummary
+import com.healthsync.ai.model.AgentChatRequest
+import com.healthsync.ai.model.AgentChatResponse
 import com.healthsync.ai.model.SyncRequest
 import com.healthsync.ai.model.SyncResponse
 import retrofit2.Response
@@ -29,6 +31,11 @@ interface HealthApiService {
         @Query("start") start: Long,
         @Query("end") end: Long
     ): HealthSummary
+
+    @POST("/agent/chat")
+    suspend fun agentChat(
+        @Body request: AgentChatRequest
+    ): AgentChatResponse
 
     companion object {
         private const val BASE_URL = "http://10.0.2.2:8000/"

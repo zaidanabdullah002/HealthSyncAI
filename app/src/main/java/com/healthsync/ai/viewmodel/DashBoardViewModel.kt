@@ -1,14 +1,19 @@
 package com.healthsync.ai.viewmodel
 
 import android.util.Log
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.healthsync.ai.model.AppIdentity
+import com.healthsync.ai.model.AgentChatRequest
+import com.healthsync.ai.model.AgentChatResponse
 import com.healthsync.ai.repository.HealthRepository
 import com.healthsync.ai.model.DashBoardUIData
 import com.healthsync.ai.model.HealthEvent
 import com.healthsync.ai.model.HealthSummary
 import com.healthsync.ai.model.toDashboardUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +24,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DashBoardViewModel @Inject constructor(
-    private val repository: HealthRepository
+    private val repository: HealthRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     // backend verified summary
@@ -29,6 +35,12 @@ class DashBoardViewModel @Inject constructor(
     // last synced timestamp
     private val _lastSynced = MutableStateFlow<Long?>(null)
     val lastSynced: StateFlow<Long?> = _lastSynced
+
+    private val _chatResponse = MutableStateFlow<AgentChatResponse?>(null)
+    val chatResponse: StateFlow<AgentChatResponse?> = _chatResponse
+
+    private val _isChatLoading = MutableStateFlow(false)
+    val isChatLoading: StateFlow<Boolean> = _isChatLoading
 
     // today's local data — Room source of truth
     val uiState: StateFlow<DashBoardUIData> = repository.getTodayEvents()
@@ -105,6 +117,31 @@ class DashBoardViewModel @Inject constructor(
     fun clearData() {
         viewModelScope.launch {
             repository.clearAllData()
+        }
+    }
+
+    fun askAgent(message: String, deviceId: String? = "phone") {
+        viewModelScope.launch {
+            _isChatLoading.value = true
+            try {
+                _chatResponse.value = repository.sendAgentChat(
+                    AgentChatRequest(
+                        message = message,
+                        userId = AppIdentity.getUserId(context),
+                        deviceId = deviceId ?: AppIdentity.getDeviceId(context),
+                        timezoneOffsetMinutes = 0
+                    )
+                )
+            } catch (e: Exception) {
+                Log.e("HealthSync", "Agent chat failed: ${e.message}")
+                _chatResponse.value = AgentChatResponse(
+                    assistantResponse = "Sorry, I couldn't answer right now.",
+                    stepsToday = null,
+                    memoryId = null
+                )
+            } finally {
+                _isChatLoading.value = false
+            }
         }
     }
 }
