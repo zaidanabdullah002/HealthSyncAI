@@ -1,5 +1,18 @@
 # HealthSync AI
 
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="assets/screenshots/dashboard.png" alt="HealthSync dashboard" width="100%" /></td>
+    <td><img src="assets/screenshots/device-logging.png" alt="Device logging sheet" width="100%" /></td>
+  </tr>
+  <tr>
+    <td><img src="assets/screenshots/chat-prompt.png" alt="Ask AI chat prompt" width="100%" /></td>
+    <td><img src="assets/screenshots/chat-response.png" alt="Ask AI response" width="100%" /></td>
+  </tr>
+</table>
+
 An offline-first, multi-device health intelligence platform built to production standards.
 
 ## Architecture
@@ -21,8 +34,8 @@ An offline-first, multi-device health intelligence platform built to production 
 | Background Sync | WorkManager |
 | Networking | Retrofit + OkHttp |
 | Async | Kotlin Coroutines + Flow |
-| Backend | FastAPI + PostgreSQL (Day 2) |
-| AI Agent | Claude API + Tool Use (Day 4) |
+| Backend | FastAPI + PostgreSQL |
+| AI Agent | OpenAI ChatGPT API + Tool Use |
 
 ## The Hard Problems
 
@@ -58,5 +71,3 @@ app/
 ├── ui/                 Compose screens, ViewModels
 └── HealthSyncApp.kt    Hilt root, WorkManager factory
 ```
-
-
