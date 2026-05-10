@@ -40,6 +40,7 @@ import java.util.Locale
 @Composable
 fun TodayActivityCount(
     context: Context,
+    onAskAi: () -> Unit,
     viewModel: DashBoardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -173,6 +174,37 @@ fun TodayActivityCount(
                         )
                     }
                 }
+
+                Spacer(Modifier.height(16.dp))
+
+                Button(
+                    onClick = onAskAi,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4F46E5),
+                        contentColor = Color.White
+                    ),
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Text(
+                            "Ask AI",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontFamily = FontFamily.Monospace
+                        )
+                        Text(
+                            "Open the chat to ask health questions",
+                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.75f),
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                }
             }
 
             // ── Steps hero ──────────────────────────────────
@@ -260,8 +292,8 @@ fun TodayActivityCount(
                     result = displaySteps.toInt()
                 )
             }
-        }
-    }
+                }
+            }
 }
 
 // ── Steps Hero Card ──────────────────────────────────────────

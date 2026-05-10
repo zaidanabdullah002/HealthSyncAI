@@ -1,6 +1,8 @@
 package com.healthsync.ai.repository
 
 import com.healthsync.ai.model.HealthEvent
+import com.healthsync.ai.model.AgentChatRequest
+import com.healthsync.ai.model.AgentChatResponse
 import com.healthsync.ai.model.HealthEventDao
 import com.healthsync.ai.model.HealthSummary
 import com.healthsync.ai.model.SyncRequest
@@ -68,5 +70,9 @@ class HealthRepository @Inject constructor(
 
     suspend fun clearAllData() {
         dao.clearAllData()
+    }
+
+    suspend fun sendAgentChat(request: AgentChatRequest): AgentChatResponse {
+        return api.agentChat(request)
     }
 }

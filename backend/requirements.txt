@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+asyncpg
+openai
+chromadb
+pydantic
